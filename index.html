@@ -41,25 +41,25 @@ body {
   border-radius: 12px;
 }
 
-/* Tabs scroll ngang */
+/* Tabs */
 .tabs {
   display: flex;
   gap: 6px;
   overflow-x: auto;
   margin: 15px 0;
   padding-bottom: 5px;
-  scroll-behavior: smooth;
 }
 
-/* Ẩn scrollbar */
 .tabs::-webkit-scrollbar {
-  display: none;
-}
-.tabs {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  height: 6px;
 }
 
+.tabs::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.4);
+  border-radius: 10px;
+}
+
+/* Tab */
 .tab {
   flex: 0 0 auto;
   padding: 6px 12px;
@@ -98,6 +98,7 @@ input::placeholder {
   color: white;
   padding: 10px;
   border-radius: 10px;
+  border: none;
 }
 
 /* Table */
@@ -106,25 +107,40 @@ table {
   border-collapse: collapse;
 }
 
-td, th {
+th, td {
   padding: 10px;
   border-top: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
+}
+
+th:last-child,
+td:last-child {
+  text-align: center;
+  width: 150px;
 }
 
 tr:hover {
   background: rgba(255,255,255,0.05);
 }
 
-/* Buttons */
+/* Actions */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
 .actions button {
-  margin-right: 5px;
   border-radius: 8px;
   padding: 5px 8px;
+  border: none;
+  cursor: pointer;
 }
 
 .edit-btn { background: orange; }
 .delete-btn { background: red; }
 
+/* Footer */
 .footer {
   margin-top: 10px;
   text-align: right;
@@ -134,6 +150,8 @@ tr:hover {
   background: rgba(255,0,0,0.7);
   padding: 6px 10px;
   border-radius: 10px;
+  border: none;
+  color: white;
 }
 
 /* Mobile */
@@ -169,7 +187,7 @@ tr:hover {
         <th>Từ</th>
         <th>Phiên âm</th>
         <th>Nghĩa</th>
-        <th></th>
+        <th>Hành động</th> <!-- 🔥 FIX LỆCH -->
       </tr>
     </thead>
     <tbody id="list"></tbody>
