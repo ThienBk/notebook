@@ -271,7 +271,7 @@
 <td>${item.time ? new Date(item.time).toLocaleDateString() : ""}</td>
 <td class="actions">
 <button class="edit-btn" onclick="editWord(${i})">Sửa</button>
-<button class="delete-btn" onclick="confirmDelete(${i})">Xóa</button>
+<button class="delete-btn" onclick="confirmDelete('${item.id}')"">Xóa</button>
 </td>
 </tr>`;
         });
@@ -302,6 +302,7 @@
 
         // ✅ Thêm nếu không trùng
         data.push({
+          id: Date.now(),
           word: w,
           phonetic: p,
           meaning: m,
@@ -370,27 +371,19 @@
       );
 
       /* Delete */
-      async function deleteWord(i) {
-        try {
-          let data = await getData();
+      async function deleteWord(id) {
+        let data = await getData();
 
-          if (!data || data.length === 0) return;
+        const newData = data.filter((item) => item.id !== id);
 
-          // 🔥 Xóa đúng item
-          const newData = data.filter((_, index) => index !== i);
-
-          await saveData(newData);
-          loadAll();
-        } catch (err) {
-          console.error("Delete error:", err);
-          alert("Lỗi khi xóa!");
-        }
+        await saveData(newData);
+        loadAll();
       }
 
       /* Confirm */
-      function confirmDelete(i) {
-        if (confirm("Bạn có chắc muốn xóa từ này?")) {
-          deleteWord(i);
+      function confirmDelete(id) {
+        if (confirm("Xóa từ này?")) {
+          deleteWord(id);
         }
       }
 
