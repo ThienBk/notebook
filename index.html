@@ -271,7 +271,7 @@
 <td>${item.time ? new Date(item.time).toLocaleDateString() : ""}</td>
 <td class="actions">
 <button class="edit-btn" onclick="editWord(${i})">Sửa</button>
-<button class="delete-btn" onclick="deleteWord(${i})">Xóa</button>
+<button class="delete-btn" onclick="confirmDelete(${i})">Xóa</button>
 </td>
 </tr>`;
         });
@@ -282,23 +282,36 @@
         const w = word.value.trim();
         const p = phonetic.value.trim();
         const m = meaning.value.trim();
-        if (!w || !m) return;
+
+        if (!w || !m) {
+          alert("Vui lòng nhập đầy đủ từ và nghĩa!");
+          return;
+        }
 
         let data = await getData();
-        data.push({ word: w, phonetic: p, meaning: m, time: Date.now() });
+
+        // 🔥 CHECK TRÙNG
+        const isDuplicate = data.some(
+          (item) => item.word.toLowerCase() === w.toLowerCase(),
+        );
+
+        if (isDuplicate) {
+          alert("⚠️ Từ này đã tồn tại!");
+          return;
+        }
+
+        // ✅ Thêm nếu không trùng
+        data.push({
+          word: w,
+          phonetic: p,
+          meaning: m,
+          time: Date.now(),
+        });
 
         await saveData(data);
         loadAll();
 
         word.value = phonetic.value = meaning.value = "";
-      }
-
-      /* Delete */
-      async function deleteWord(i) {
-        let data = await getData();
-        data.splice(i, 1);
-        await saveData(data);
-        loadAll();
       }
 
       /* Edit */
@@ -355,6 +368,31 @@
           if (e.key === "Enter") addWord();
         }),
       );
+
+      /* Delete */
+      async function deleteWord(i) {
+        try {
+          let data = await getData();
+
+          if (!data || data.length === 0) return;
+
+          // 🔥 Xóa đúng item
+          const newData = data.filter((_, index) => index !== i);
+
+          await saveData(newData);
+          loadAll();
+        } catch (err) {
+          console.error("Delete error:", err);
+          alert("Lỗi khi xóa!");
+        }
+      }
+
+      /* Confirm */
+      function confirmDelete(i) {
+        if (confirm("Bạn có chắc muốn xóa từ này?")) {
+          deleteWord(i);
+        }
+      }
 
       function loadAll() {
         renderList();
