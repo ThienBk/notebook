@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vocabulary Notebook Pro</title>
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #0f2027, #2c5364);
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  min-height: 100vh;
+  color: #fff;
+}
+
+/* Glass */
+.app {
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 20px;
+  width: 100%;
+  max-width: 950px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.count {
+  background: rgba(255,255,255,0.15);
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+/* Tabs scroll ngang */
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 15px 0;
+  padding-bottom: 5px;
+  scroll-behavior: smooth;
+}
+
+/* Ẩn scrollbar */
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tabs {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tab {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab.active {
+  background: #4facfe;
+}
+
+/* Input */
+.input-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr auto;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+input {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.add-btn {
+  background: linear-gradient(135deg, #00f260, #0575e6);
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td, th {
+  padding: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Buttons */
+.actions button {
+  margin-right: 5px;
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+
+.edit-btn { background: orange; }
+.delete-btn { background: red; }
+
+.footer {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.reset-btn {
+  background: rgba(255,0,0,0.7);
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .input-group {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <h2>📘 Vocabulary Notebook</h2>
+    <div class="count" id="count">0 / 50</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="input-group">
+    <input id="word" placeholder="Từ vựng">
+    <input id="phonetic" placeholder="Phiên âm">
+    <input id="meaning" placeholder="Nghĩa">
+    <button class="add-btn" onclick="addWord()">Thêm</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Từ</th>
+        <th>Phiên âm</th>
+        <th>Nghĩa</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+
+  <div class="footer">
+    <button class="reset-btn" onclick="resetPage()">Xóa trang</button>
+  </div>
+
+</div>
+
+<script>
+let currentPage = 1;
+const totalPages = 20;
+
+/* Tabs */
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+
+  for (let i = 1; i <= totalPages; i++) {
+    const tab = document.createElement("div");
+    tab.className = "tab " + (i === currentPage ? "active" : "");
+    tab.innerText = "Trang " + i;
+
+    tab.onclick = () => {
+      currentPage = i;
+      renderTabs();
+      renderList();
+    };
+
+    tabs.appendChild(tab);
+  }
+}
+
+/* Storage */
+function getKey() {
+  return "vocab_page_" + currentPage;
+}
+
+function getData() {
+  return JSON.parse(localStorage.getItem(getKey())) || [];
+}
+
+function saveData(data) {
+  localStorage.setItem(getKey(), JSON.stringify(data));
+}
+
+/* Render */
+function renderList() {
+  const list = document.getElementById("list");
+  const data = getData();
+  list.innerHTML = "";
+
+  data.forEach((item, index) => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${item.word}</td>
+      <td>${item.phonetic}</td>
+      <td>${item.meaning}</td>
+      <td class="actions">
+        <button class="edit-btn" onclick="editWord(${index})">Sửa</button>
+        <button class="delete-btn" onclick="deleteWord(${index})">Xóa</button>
+      </td>
+    `;
+
+    list.appendChild(tr);
+  });
+
+  document.getElementById("count").innerText =
+    data.length + " / 50";
+}
+
+/* Add */
+function addWord() {
+  const word = document.getElementById("word").value.trim();
+  const phonetic = document.getElementById("phonetic").value.trim();
+  const meaning = document.getElementById("meaning").value.trim();
+
+  if (!word || !meaning) return;
+
+  const data = getData();
+
+  if (data.length >= 50) {
+    alert("Trang này đã đủ 50 từ!");
+    return;
+  }
+
+  data.push({ word, phonetic, meaning });
+
+  saveData(data);
+  renderList();
+
+  document.getElementById("word").value = "";
+  document.getElementById("phonetic").value = "";
+  document.getElementById("meaning").value = "";
+}
+
+/* Delete */
+function deleteWord(index) {
+  const data = getData();
+  data.splice(index, 1);
+  saveData(data);
+  renderList();
+}
+
+/* Edit */
+function editWord(index) {
+  const data = getData();
+
+  const word = prompt("Từ:", data[index].word);
+  const phonetic = prompt("Phiên âm:", data[index].phonetic);
+  const meaning = prompt("Nghĩa:", data[index].meaning);
+
+  if (word && meaning) {
+    data[index] = { word, phonetic, meaning };
+    saveData(data);
+    renderList();
+  }
+}
+
+/* Reset */
+function resetPage() {
+  if (confirm("Xóa hết từ của trang này?")) {
+    localStorage.removeItem(getKey());
+    renderList();
+  }
+}
+
+/* Enter */
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") addWord();
+});
+
+/* Init */
+renderTabs();
+renderList();
+</script>
+
+</body>
+</html>
