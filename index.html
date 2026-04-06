@@ -282,36 +282,23 @@
         const w = word.value.trim();
         const p = phonetic.value.trim();
         const m = meaning.value.trim();
-
-        if (!w || !m) {
-          alert("Vui lòng nhập đầy đủ từ và nghĩa!");
-          return;
-        }
+        if (!w || !m) return;
 
         let data = await getData();
-
-        // 🔥 CHECK TRÙNG
-        const isDuplicate = data.some(
-          (item) => item.word.toLowerCase() === w.toLowerCase(),
-        );
-
-        if (isDuplicate) {
-          alert("⚠️ Từ này đã tồn tại!");
-          return;
-        }
-
-        // ✅ Thêm nếu không trùng
-        data.push({
-          word: w,
-          phonetic: p,
-          meaning: m,
-          time: Date.now(),
-        });
+        data.push({ word: w, phonetic: p, meaning: m, time: Date.now() });
 
         await saveData(data);
         loadAll();
 
         word.value = phonetic.value = meaning.value = "";
+      }
+
+      /* Delete */
+      async function deleteWord(i) {
+        let data = await getData();
+        data.splice(i, 1);
+        await saveData(data);
+        loadAll();
       }
 
       /* Edit */
