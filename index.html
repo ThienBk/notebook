@@ -348,6 +348,7 @@
           rows.forEach((r) => {
             if (r.length >= 3) {
               current.push({
+                id: Date.now() + Math.random(),
                 word: r[0],
                 phonetic: r[1],
                 meaning: r[2],
