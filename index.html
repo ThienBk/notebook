@@ -1,272 +1,137 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Voca Web FINAL</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voca Stable</title>
 
 <style>
-*{box-sizing:border-box}
-body{
-  font-family:-apple-system,sans-serif;
-  background:linear-gradient(135deg,#0f2027,#2c5364);
-  display:flex;justify-content:center;padding:15px;color:#fff;
-}
-
-.app{
-  width:100%;max-width:1100px;
-  background:rgba(255,255,255,0.08);
-  backdrop-filter:blur(20px);
-  border-radius:20px;padding:20px;
-}
-
-/* Tabs */
-.tabs{display:flex;gap:8px;overflow-x:auto;margin:10px 0}
-.tab{
-  padding:8px 12px;border-radius:12px;
-  background:rgba(255,255,255,0.1);
-  cursor:pointer;
-}
-.tab.active{background:linear-gradient(135deg,#4facfe,#00f2fe)}
-
-/* Inputs */
-.input-group{
-  display:grid;
-  grid-template-columns:1fr 1fr 2fr auto;
-  gap:8px;margin:10px 0;
-}
-input,select{
-  padding:10px;border-radius:10px;border:none;
-  background:rgba(255,255,255,0.15);color:#fff;
-}
-button{
-  padding:8px 12px;border-radius:10px;border:none;cursor:pointer;
-}
-.add-btn{background:#00c6ff}
-.edit-btn{background:orange}
-.delete-btn{background:red}
-
-/* Table */
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-top:1px solid rgba(255,255,255,0.1)}
-td:first-child{text-align:center;width:50px}
-th:last-child,td:last-child{text-align:center;width:140px}
-.actions{display:flex;justify-content:center;gap:6px}
-
-/* Mobile */
-@media(max-width:768px){
-  .input-group{grid-template-columns:1fr}
-  table{display:block;overflow-x:auto;white-space:nowrap}
-}
+body{font-family:-apple-system;background:#2c5364;color:#fff;padding:10px}
+.app{max-width:1000px;margin:auto}
+input,button,select{padding:8px;border-radius:8px;border:none}
+button{cursor:pointer}
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<h2>📘 Voca Web FINAL</h2>
+<h2>📘 Voca Stable</h2>
 
-<input id="topicInput" placeholder="Topic..." style="width:100%;margin-bottom:10px">
+<input id="topicInput" placeholder="Topic"><br><br>
 
-<div id="tabs" class="tabs"></div>
+<div id="tabs"></div>
 
 <select id="filter" onchange="renderList()">
-  <option value="">-- Bộ lọc --</option>
-  <option value="length">Số nét tăng dần</option>
-  <option value="date">Ngày mới nhất</option>
+<option value="">-- Bộ lọc --</option>
+<option value="length">Số nét</option>
+<option value="date">Ngày</option>
 </select>
 
-<input type="file" id="excelFile" accept=".xlsx">
-<button onclick="importExcel()">Import Excel</button>
+<br><br>
 
-<div class="input-group">
-  <input id="word" placeholder="Từ vựng">
-  <input id="phonetic" placeholder="Phiên âm">
-  <input id="meaning" placeholder="Nghĩa">
-  <button class="add-btn" onclick="addWord()">Thêm</button>
-</div>
+<input id="word" placeholder="Từ">
+<input id="phonetic" placeholder="Phiên âm">
+<input id="meaning" placeholder="Nghĩa">
+<button onclick="addWord()">Thêm</button>
 
-<table>
-<thead>
-<tr>
-<th>#</th><th>Từ</th><th>Phiên âm</th><th>Nghĩa</th><th>Ngày</th><th></th>
-</tr>
-</thead>
+<table border="1" width="100%">
 <tbody id="list"></tbody>
 </table>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
 const firebaseConfig={
-  apiKey:"AIzaSyAFQmjy1RkMe_xhbFScVLAIYu-VOrM5gtw",
-  authDomain:"voca-web-9a1e7.firebaseapp.com",
-  projectId:"voca-web-9a1e7"
+apiKey:"AIzaSyAFQmjy1RkMe_xhbFScVLAIYu-VOrM5gtw",
+authDomain:"voca-web-9a1e7.firebaseapp.com",
+projectId:"voca-web-9a1e7"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 
 let currentPage=1;
-const totalPages=20;
+let cache=[];
 
-/* Tabs */
-function renderTabs(){
-  tabs.innerHTML="";
-  for(let i=1;i<=totalPages;i++){
-    const t=document.createElement("div");
-    t.className="tab "+(i===currentPage?"active":"");
-    t.innerText=i;
-    t.onclick=()=>{currentPage=i;renderTabs();loadAll()}
-    tabs.appendChild(t);
-  }
+/* Load */
+async function loadData(){
+const doc=await db.collection("voca").doc("page_"+currentPage).get();
+cache=doc.exists?doc.data().items||[]:[];
 }
 
-/* Topic */
-topicInput.addEventListener("input",()=>{
-  db.collection("topic").doc("page_"+currentPage)
-  .set({topic:topicInput.value});
-});
-
-async function loadTopic(){
-  const doc=await db.collection("topic").doc("page_"+currentPage).get();
-  topicInput.value=doc.exists?doc.data().topic:"";
-}
-
-/* Data */
-async function getData(){
-  const doc=await db.collection("voca").doc("page_"+currentPage).get();
-  return doc.exists?doc.data().items||[]:[];
-}
-async function saveData(data){
-  await db.collection("voca").doc("page_"+currentPage).set({items:data});
+/* Save */
+async function saveData(){
+await db.collection("voca").doc("page_"+currentPage).set({items:cache});
 }
 
 /* Render */
-async function renderList(){
-  let data=await getData();
-  const filter=document.getElementById("filter").value;
+function renderList(){
+let data=[...cache];
 
-  if(filter==="length") data.sort((a,b)=>a.word.length-b.word.length);
-  if(filter==="date") data.sort((a,b)=>(b.time||0)-(a.time||0));
+const f=document.getElementById("filter").value;
+if(f==="length") data.sort((a,b)=>a.word.length-b.word.length);
+if(f==="date") data.sort((a,b)=>b.time-a.time);
 
-  list.innerHTML="";
-
-  data.forEach((item,i)=>{
-    list.innerHTML+=`
+list.innerHTML="";
+data.forEach((item,i)=>{
+list.innerHTML+=`
 <tr>
 <td>${i+1}</td>
 <td>${item.word}</td>
-<td>${item.phonetic}</td>
 <td>${item.meaning}</td>
-<td>${item.time?new Date(item.time).toLocaleDateString():""}</td>
-<td class="actions">
-<button class="edit-btn" onclick="editWord('${item.id}')">Sửa</button>
-<button class="delete-btn" onclick="confirmDelete('${item.id}')">Xóa</button>
+<td>
+<button onclick="editWord('${item.id}')">Sửa</button>
+<button onclick="deleteWord('${item.id}')">Xóa</button>
 </td>
 </tr>`;
-  });
+});
 }
 
 /* Add */
 async function addWord(){
-  const w=word.value.trim();
-  const p=phonetic.value.trim();
-  const m=meaning.value.trim();
+const w=word.value.trim();
+const m=meaning.value.trim();
+if(!w||!m)return;
 
-  if(!w||!m){alert("Nhập đủ dữ liệu");return;}
+if(cache.some(i=>i.word.toLowerCase()===w.toLowerCase())){
+alert("Trùng từ");return;
+}
 
-  let data=await getData();
-
-  if(data.some(i=>i.word.toLowerCase()===w.toLowerCase())){
-    alert("⚠️ Trùng từ!");
-    return;
-  }
-
-  data.push({
-    id:Date.now()+"_"+Math.random(),
-    word:w,phonetic:p,meaning:m,time:Date.now()
-  });
-
-  await saveData(data);
-  loadAll();
-
-  word.value=phonetic.value=meaning.value="";
+cache.push({id:Date.now()+"",word:w,phonetic:"",meaning:m,time:Date.now()});
+await saveData();
+renderList();
 }
 
 /* Delete */
 async function deleteWord(id){
-  let data=await getData();
-  data=data.filter(i=>i.id!==id);
-  await saveData(data);
-  loadAll();
-}
-
-function confirmDelete(id){
-  if(confirm("Xóa từ này?")) deleteWord(id);
+cache=cache.filter(i=>i.id!==id);
+await saveData();
+renderList();
 }
 
 /* Edit */
 async function editWord(id){
-  let data=await getData();
-  const item=data.find(i=>i.id===id);
+const item=cache.find(i=>i.id===id);
+const w=prompt("Từ:",item.word);
+const m=prompt("Nghĩa:",item.meaning);
 
-  const w=prompt("Từ:",item.word);
-  const p=prompt("Phiên âm:",item.phonetic);
-  const m=prompt("Nghĩa:",item.meaning);
-
-  if(w&&m){
-    Object.assign(item,{word:w,phonetic:p,meaning:m});
-    await saveData(data);
-    loadAll();
-  }
+if(w&&m){
+item.word=w;item.meaning=m;
+await saveData();
+renderList();
+}
 }
 
-/* Excel */
-function importExcel(){
-  const file=excelFile.files[0];
-  if(!file) return;
-
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-
-    let data=await getData();
-
-    rows.forEach(r=>{
-      if(r.length>=3){
-        data.push({
-          id:Date.now()+"_"+Math.random(),
-          word:r[0],phonetic:r[1],meaning:r[2],time:Date.now()
-        });
-      }
-    });
-
-    await saveData(data);
-    loadAll();
-  };
-
-  reader.readAsArrayBuffer(file);
+/* Init */
+async function init(){
+await loadData();
+renderList();
 }
-
-/* Enter */
-document.querySelectorAll("#word,#phonetic,#meaning")
-.forEach(el=>el.addEventListener("keydown",e=>{
-  if(e.key==="Enter") addWord();
-}));
-
-function loadAll(){
-  renderList();
-  loadTopic();
-}
-
-renderTabs();
-loadAll();
+init();
 </script>
 
 </body>
