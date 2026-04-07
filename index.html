@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Voca Web Vocabulary</title>
+    <title>YingShan Vocabulary PRO</title>
 
     <style>
       body {
@@ -51,7 +51,6 @@
         border: none;
         color: white;
         margin-bottom: 10px;
-        width: 100%;
       }
 
       /* Filter */
@@ -104,6 +103,7 @@
       td {
         padding: 10px;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: left;
       }
 
       td:first-child {
@@ -122,16 +122,54 @@
         justify-content: center;
         gap: 6px;
       }
-
-      /* Mobile */
+      /* ===== MOBILE RESPONSIVE ===== */
       @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        .app {
+          padding: 12px;
+        }
+
+        /* Tabs scroll mượt */
+        .tabs {
+          overflow-x: auto;
+        }
+
+        /* Input xuống dòng */
         .input-group {
           grid-template-columns: 1fr;
         }
+
+        /* Button full width */
+        .add-btn {
+          width: 100%;
+        }
+
+        /* Table scroll ngang */
         table {
           display: block;
           overflow-x: auto;
           white-space: nowrap;
+        }
+
+        /* Giảm padding */
+        th,
+        td {
+          padding: 8px;
+          font-size: 13px;
+        }
+
+        /* Nút gọn lại */
+        .actions button {
+          padding: 6px 8px;
+          font-size: 12px;
+        }
+
+        /* Topic nhỏ lại */
+        .topic input {
+          width: 100%;
         }
       }
     </style>
@@ -139,7 +177,7 @@
 
   <body>
     <div class="app">
-      <h2>📘 Voca Web Vocabulary</h2>
+      <h2>📘 YingShan Vocabulary</h2>
 
       <div class="topic">
         <input id="topicInput" placeholder="Topic..." />
@@ -183,7 +221,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-      // 🔥 CONFIG MỚI CỦA BẠN
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
       const firebaseConfig = {
         apiKey: "AIzaSyAFQmjy1RkMe_xhbFScVLAIYu-VOrM5gtw",
         authDomain: "voca-web-9a1e7.firebaseapp.com",
@@ -191,8 +229,8 @@
         storageBucket: "voca-web-9a1e7.firebasestorage.app",
         messagingSenderId: "296416317837",
         appId: "1:296416317837:web:4f978b3123a7808a922dc4",
+        measurementId: "G-XD8CYFZ342",
       };
-
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
 
@@ -201,26 +239,31 @@
 
       /* Tabs */
       function renderTabs() {
+        const tabs = document.getElementById("tabs");
         tabs.innerHTML = "";
+
         for (let i = 1; i <= totalPages; i++) {
-          const t = document.createElement("div");
-          t.className = "tab " + (i === currentPage ? "active" : "");
-          t.innerText = i;
-          t.onclick = () => {
+          const tab = document.createElement("div");
+          tab.className = "tab " + (i === currentPage ? "active" : "");
+          tab.innerText = i;
+
+          tab.onclick = () => {
             currentPage = i;
             renderTabs();
             loadAll();
           };
-          tabs.appendChild(t);
+
+          tabs.appendChild(tab);
         }
       }
 
       /* Topic */
       async function saveTopic() {
+        const topic = topicInput.value;
         await db
           .collection("topic")
           .doc("page_" + currentPage)
-          .set({ topic: topicInput.value });
+          .set({ topic });
       }
 
       async function loadTopic() {
@@ -230,12 +273,13 @@
           .get();
         topicInput.value = doc.exists ? doc.data().topic : "";
       }
+
       topicInput.addEventListener("input", saveTopic);
 
       /* Data */
       async function getData() {
         const doc = await db
-          .collection("voca")
+          .collection("voca-web")
           .doc("page_" + currentPage)
           .get();
         return doc.exists ? doc.data().items || [] : [];
@@ -243,7 +287,7 @@
 
       async function saveData(data) {
         await db
-          .collection("voca")
+          .collection("voca-web")
           .doc("page_" + currentPage)
           .set({ items: data });
       }
@@ -252,13 +296,19 @@
       async function renderList() {
         let data = await getData();
 
-        const filter = document.getElementById("filter").value;
+        // 🔥 FIX LỖI Ở ĐÂY
+        const filterEl = document.getElementById("filter");
+        const filter = filterEl ? filterEl.value : "";
 
-        if (filter === "length")
+        if (filter === "length") {
           data.sort((a, b) => a.word.length - b.word.length);
-        if (filter === "date")
-          data.sort((a, b) => (b.time || 0) - (a.time || 0));
+        }
 
+        if (filter === "date") {
+          data.sort((a, b) => (b.time || 0) - (a.time || 0));
+        }
+
+        const list = document.getElementById("list");
         list.innerHTML = "";
 
         data.forEach((item, i) => {
@@ -271,7 +321,7 @@
 <td>${item.time ? new Date(item.time).toLocaleDateString() : ""}</td>
 <td class="actions">
 <button class="edit-btn" onclick="editWord(${i})">Sửa</button>
-<button class="delete-btn" onclick="confirmDelete('${item.id}')">Xóa</button>
+<button class="delete-btn" onclick="deleteWord(${i})">Xóa</button>
 </td>
 </tr>`;
         });
@@ -283,31 +333,10 @@
         const p = phonetic.value.trim();
         const m = meaning.value.trim();
 
-        if (!w || !m) {
-          alert("Vui lòng nhập đầy đủ từ và nghĩa!");
-          return;
-        }
+        if (!w || !m) return;
 
         let data = await getData();
-
-        // 🔥 CHECK TRÙNG
-        const isDuplicate = data.some(
-          (item) => item.word.toLowerCase() === w.toLowerCase(),
-        );
-
-        if (isDuplicate) {
-          alert("⚠️ Từ này đã tồn tại!");
-          return;
-        }
-
-        // ✅ Thêm nếu không trùng
-        data.push({
-          id: Date.now(),
-          word: w,
-          phonetic: p,
-          meaning: m,
-          time: Date.now(),
-        });
+        data.push({ word: w, phonetic: p, meaning: m, time: Date.now() });
 
         await saveData(data);
         loadAll();
@@ -315,15 +344,24 @@
         word.value = phonetic.value = meaning.value = "";
       }
 
+      /* Delete */
+      async function deleteWord(i) {
+        let data = await getData();
+        data.splice(i, 1);
+        await saveData(data);
+        loadAll();
+      }
+
       /* Edit */
       async function editWord(i) {
         let data = await getData();
+
         const w = prompt("Từ:", data[i].word);
         const p = prompt("Phiên âm:", data[i].phonetic);
         const m = prompt("Nghĩa:", data[i].meaning);
 
         if (w && m) {
-          data[i] = { ...data[i], id: data[i].id, word: w, phonetic: p, meaning: m };
+          data[i] = { ...data[i], word: w, phonetic: p, meaning: m };
           await saveData(data);
           loadAll();
         }
@@ -335,10 +373,10 @@
         if (!file) return;
 
         const reader = new FileReader();
+
         reader.onload = async (e) => {
-          const wb = XLSX.read(new Uint8Array(e.target.result), {
-            type: "array",
-          });
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, { type: "array" });
           const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
             header: 1,
           });
@@ -348,7 +386,6 @@
           rows.forEach((r) => {
             if (r.length >= 3) {
               current.push({
-                id: Date.now() + Math.random(),
                 word: r[0],
                 phonetic: r[1],
                 meaning: r[2],
@@ -365,50 +402,19 @@
       }
 
       /* Enter */
-      document.querySelectorAll("#word,#phonetic,#meaning").forEach((el) =>
+      document.querySelectorAll("#word,#phonetic,#meaning").forEach((el) => {
         el.addEventListener("keydown", (e) => {
           if (e.key === "Enter") addWord();
-        }),
-      );
+        });
+      });
 
-      /* Delete */
-      async function deleteWord(id) {
-        let data = await getData();
-
-        const newData = data.filter((item) => item.id !== id);
-
-        await saveData(newData);
-        loadAll();
-      }
-
-      /* Confirm */
-      /* Confirm */
-      function confirmDelete(id) {
-        if (confirm("Bạn có chắc muốn xóa từ này?")) {
-          deleteWord(id);
-        }
-      }
-
-      /* Delete */
-      async function deleteWord(id) {
-        try {
-          let data = await getData();
-
-          const newData = data.filter((item) => item.id !== id);
-
-          await saveData(newData);
-          loadAll();
-        } catch (err) {
-          console.error(err);
-          alert("Lỗi khi xóa!");
-        }
-      }
-
+      /* Load */
       function loadAll() {
         renderList();
         loadTopic();
       }
 
+      /* Init */
       renderTabs();
       loadAll();
     </script>
