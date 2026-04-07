@@ -416,10 +416,11 @@
 
           rows.forEach((r) => {
             if (r.length >= 3) {
-              current.push({
-                word: r[0],
-                phonetic: r[1],
-                meaning: r[2],
+              data.push({
+                id: Date.now() + "_" + Math.random().toString(36).substr(2, 9), // id duy nhất
+                word: w,
+                phonetic: p,
+                meaning: m,
                 time: Date.now(),
               });
             }
