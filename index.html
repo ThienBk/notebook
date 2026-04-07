@@ -46,7 +46,7 @@
       }
 
       .topic input {
-        padding: 10px 10px;
+        padding: 10px 14px;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.2);
         border: none;
@@ -62,11 +62,25 @@
         width: 100%;
       }
 
+      /* ====================== INPUT GROUP - ĐẸP CẢ PC & MOBILE ====================== */
       .input-group {
         display: grid;
-        grid-template-columns: 1fr;
         gap: 10px;
         margin: 15px 0;
+      }
+
+      /* Trên máy tính (>= 769px): gọn gàng như bản cũ */
+      @media (min-width: 769px) {
+        .input-group {
+          grid-template-columns: 1fr 1fr 2fr auto;
+        }
+      }
+
+      /* Trên mobile: xuống dòng */
+      @media (max-width: 768px) {
+        .input-group {
+          grid-template-columns: 1fr;
+        }
       }
 
       input {
@@ -75,7 +89,7 @@
         border: none;
         background: rgba(255, 255, 255, 0.15);
         color: white;
-        font-size: 16px; /* Tránh zoom trên iOS */
+        font-size: 16px;
       }
 
       button {
@@ -84,9 +98,13 @@
         border: none;
         cursor: pointer;
         font-size: 16px;
+        white-space: nowrap;
       }
 
-      .add-btn { background: #00c6ff; }
+      .add-btn { 
+        background: #00c6ff; 
+        font-weight: 600;
+      }
 
       table {
         width: 100%;
@@ -109,7 +127,7 @@
         gap: 6px;
       }
 
-      /* Highlight hover - chỉ trên desktop */
+      /* Highlight hover chỉ trên desktop */
       @media (hover: hover) {
         tr:hover {
           background: rgba(255, 255, 255, 0.15) !important;
